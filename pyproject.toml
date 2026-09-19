@@ -7,5 +7,8 @@ requires-python = ">=3.11"
 dependencies = [
     "discord>=2.3.2",
     "dotenv>=0.9.9",
+    "langchain>=1.4.2",
+    "langchain-openai>=1.6.2",
+    "langchain-tavily>=0.2.18",
     "openai>=2.14.0",
 ]
