@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import discord
 from discord.ext import commands
 from collections import deque
@@ -9,7 +10,6 @@ from config import (
     logger,
     OPENAI_API_KEY,
     OPENAI_BASE_URL,
-    MODEL_NAME,
     MAX_API_RETRIES,
     MAX_CONTEXT_MESSAGES,
 )
@@ -45,6 +45,35 @@ class Chat(commands.Cog):
         print("Got a DM here")
         return self.guild_active.get(guild_id, True)
 
+    @commands.command()
+    async def simba(self, ctx):
+        message = copy.copy(ctx.message)
+        command_text = f"{ctx.prefix}{ctx.invoked_with}"
+        message.content = ctx.message.content.removeprefix(command_text).lstrip()
+        formatted = await format_message_with_reply(message)
+
+        async with self.api_lock:
+            async with ctx.channel.typing():
+                for attempt in range(1, MAX_API_RETRIES + 1):
+                    try:
+                        result = await agent.ainvoke({
+                            "messages": [{
+                                "role": "user",
+                                "content": formatted,
+                            }]
+                        })
+                        reply = result["messages"][-1].content
+
+                        for chunk in split_message(reply):
+                            await ctx.send(chunk)
+                        return
+                    except Exception:
+                        logger.exception("Agent error attempt %d", attempt)
+                        await asyncio.sleep(1.5)
+
+                await ctx.send("⚠️ Failed to generate a response.")
+
+    
     async def handle_ai_chat(self, message: discord.Message):
         if not self.is_chat_enabled(message.guild.id if message.guild else None):
             return
@@ -112,6 +141,9 @@ class Chat(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if message.author.bot:
+            return
+
+        if (message.content.startswith("!") and message.channel.id not in self.bot.allowed_channels and not ("simba" in message.content or "clearcontext" in message.content)):
             return
 
         ctx = await self.bot.get_context(message)

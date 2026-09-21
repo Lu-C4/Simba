@@ -1,13 +1,13 @@
 import os
 from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
-from utils.ev_tools import getUserData
+from utils.ev_tools import getUserData, fetch_lobby_links
 from langchain_tavily import TavilySearch
 from dotenv import load_dotenv
 from system_prompt import system_prompt
 load_dotenv()
 
-tools = [getUserData,TavilySearch()]
+tools = [getUserData,TavilySearch(),fetch_lobby_links]
 
 # from langchain_aws import ChatBedrockConverse
 # llm = ChatBedrockConverse(

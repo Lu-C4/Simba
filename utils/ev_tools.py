@@ -1,5 +1,98 @@
 import httpx
 from langchain.tools import tool
+import cloudscraper
+import random
+import json
+import asyncio
+import re
+
+BUNDLE_URL = "https://ev.io/dist/1-7-0/public/bundle.js"
+
+def get_count(url: str) -> str:
+    """Fetch the current player count for a lobby."""
+    try:
+        scraper = cloudscraper.create_scraper()
+        response = scraper.get(
+            f"{url}players{random.random()}",
+            timeout=5,
+        )
+
+        return str(json.loads(response.text)["playerCount"])
+
+    except Exception:
+        return "N/A"
+
+@tool
+async def fetch_lobby_links():
+    """
+    Fetch active lobbies and their player counts.
+
+    Returns:
+        List of dictionaries containing:
+        region, url, player_count, id, gamemode
+    """
+
+    BUNDLE_URL = "https://ev.io/dist/1-7-0/public/bundle.js"
+
+    # ---------------------------
+    # Fetch lobby list
+    # ---------------------------
+
+    async with httpx.AsyncClient() as client:
+        r = await client.get(BUNDLE_URL)
+
+    match = re.search(
+        r'(\[\s*\{"id":"lobby-.*?\}\s*\])',
+        r.text,
+        re.DOTALL
+    )
+
+    if not match:
+        return []
+
+    data = json.loads(match.group(1))
+
+    # ---------------------------
+    # Prepare connection URLs
+    # ---------------------------
+
+    connection_urls = [
+        game["connectionUrl"].replace("wss", "https")
+        for game in data
+    ]
+
+    # ---------------------------
+    # Fetch player counts
+    # ---------------------------
+
+    semaphore = asyncio.Semaphore(16)
+
+    async def fetch_count(url):
+        async with semaphore:
+            return await asyncio.to_thread(
+                get_count,
+                url
+            )
+
+    counts = await asyncio.gather(
+        *(fetch_count(url) for url in connection_urls)
+    )
+
+    # ---------------------------
+    # Return lobby information
+    # ---------------------------
+
+    return [
+        {
+            "region": game["region"],
+            "url": f"https://ev.io/?game={game['id']}",
+            "player_count": count,
+            "id": game["id"],
+            "gamemode": game["gamemode"],
+        }
+        for game, count in zip(data, counts)
+    ]
+   
 @tool
 def getUserData(username:str):
     """
@@ -21,9 +114,4 @@ def getUserData(username:str):
         data[0]['field_field_achievements']=[]
         
         return data[0] if data else data
-
-async def getClanData(UID=903):
-    async with httpx.AsyncClient() as client:
-        data= (await client.get(f"https://ev.io/group/{UID}?_format=json"))
-    return data.json()
 

@@ -8,6 +8,8 @@ class Admin(commands.Cog):
         self.chat = chat_cog
 
     async def admin_check(self, ctx):
+        if await self.bot.is_owner(ctx.author):
+            return True
         if not is_admin(ctx.author):
             await ctx.send("❌ Only Moderators are allowed to run commands!")
             return False

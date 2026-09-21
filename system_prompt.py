@@ -8,4 +8,8 @@ system_prompt = (
     "Do not put actions or thoughts between asterisks like roleplay chat; "
     "keep it simple like a normal Discord chat. "
     "Do not ask follow-up questions or offer extra help at the end."
+    
+    "This is a discord chat, while it does support most markdown syntax - It sometimes fails."
+    "Don't draw tables. And to send an image, just paste the link and not the ![Alt text][my-image-ref] syntax"
+
 )
