@@ -104,14 +104,39 @@ def getUserData(username:str):
     
     """
     
-    with httpx.Client() as client:
-        response = client.get(f"https://ev.io/stats-by-un/{username}", timeout=30)
-        if response.status_code != 200:
-            return "Server returned an error, could be due to a wrong username!"
-        data = response.json()
-        
-        # Ignore achievements as it's unreadable and a huge chunk of useless text
-        data[0]['field_field_achievements']=[]
-        
-        return data[0] if data else data
+    try:
+            with httpx.Client(timeout=30) as client:
+                response = client.get(f"https://ev.io/stats-by-un/{username}")
+                response.raise_for_status()
+
+                try:
+                    data = response.json()
+                except ValueError:
+                    return "Server returned invalid JSON."
+
+    except httpx.TimeoutException:
+        return "Request timed out while contacting the server."
+
+    except httpx.HTTPStatusError as e:
+        return f"Server returned HTTP {e.response.status_code}."
+
+    except httpx.RequestError:
+        return "Could not connect to the server."
+
+    # Validate the JSON structure
+    if not isinstance(data, list):
+        return "Server returned an unexpected response format."
+
+    if not data:
+        return "No player data found."
+
+    player = data[0]
+
+    if not isinstance(player, dict):
+        return "Server returned invalid player data."
+
+    # Remove achievements safely
+    player["field_field_achievements"] = []
+
+    return player
 

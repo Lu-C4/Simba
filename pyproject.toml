@@ -10,6 +10,7 @@ dependencies = [
     "dotenv>=0.9.9",
     "langchain>=1.4.2",
     "langchain-aws>=1.7.8",
+    "langchain-ollama>=1.1.0",
     "langchain-openai>=1.6.2",
     "langchain-tavily>=0.2.18",
     "openai>=2.14.0",

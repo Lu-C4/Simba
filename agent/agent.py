@@ -16,6 +16,13 @@ tools = [getUserData,TavilySearch(),fetch_lobby_links]
 #     temperature=0.1,
 # )
 
+# from langchain_ollama import ChatOllama
+# llm=ChatOllama(
+#     model="qwen3.5:4b",
+#     temperature=0.1,
+#     reasoning=None
+# )
+
 llm=ChatOpenAI(
     model="openai/gpt-oss-20b",
     temperature=0.1,
